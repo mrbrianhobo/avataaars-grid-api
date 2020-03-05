@@ -1,10 +1,9 @@
-const express = require('express');
 const path = require('path');
 const sharp = require('sharp');
 const tinycolor = require("tinycolor2");
 const Avatars = require('@dicebear/avatars');
 const sprites = require('@dicebear/avatars-avataaars-sprites');
-const { convert } = require('convert-svg-to-png');
+const { createConverter } = require('convert-svg-to-png');
 
 const transparent = { r: 0, g: 0, b: 0, alpha: 0 };
 
@@ -37,15 +36,23 @@ function hex2rgb(hexcode) {
   }
 }
 
-const app = express();
-const port = 3000;
-
 const options = { radius: 25 };
-
 const avatars = new Avatars.default(sprites.default, options);
 
-app.get('/*', async function (req, res) {
-  const { hashes, color } = parseImgPath(req.url);
+var converter = createConverter({ puppeteer: { args: ["--no-sandbox"] } });
+
+exports.avatars = async (req, res) => {
+  let hashes;
+  let color;
+  
+  try {
+    const { hashes: _hashes, color: _color } = parseImgPath(req.url);
+    hashes = _hashes;
+    color = _color;
+  } catch(e) {
+
+    return;
+  }
   
   const canvas = sharp({
     create: {
@@ -56,10 +63,15 @@ app.get('/*', async function (req, res) {
     }
   });
 
-  const pngs = await Promise.all(hashes.map((hash) => {
-    const svg = avatars.create(hash); 
-    return convert(svg, { width: 400, height: 400 });
-  }));
+  const pngs = [];
+  for (let i = 0; i < hashes.length; i++) {
+    let svg = avatars.create(hashes[i]);
+    let png = await converter.convert(svg, {
+      "width": 400,
+      "height": 400
+    });
+    pngs.push(png);
+  }
 
   const grid = [
     // northwest
@@ -79,6 +91,4 @@ app.get('/*', async function (req, res) {
   
   res.set('Content-Type', 'image/png');
   res.send(composite);
-});
-
-app.listen(port, () => console.log(`avatar generator listening on port ${port}!`))
+};
