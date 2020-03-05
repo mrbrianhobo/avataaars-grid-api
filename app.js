@@ -6,14 +6,14 @@ const Avatars = require('@dicebear/avatars');
 const sprites = require('@dicebear/avatars-avataaars-sprites');
 const { convert } = require('convert-svg-to-png');
 
-let transparent = { r: 0, g: 0, b: 0, alpha: 0 };
+const transparent = { r: 0, g: 0, b: 0, alpha: 0 };
 
 function parseImgPath(imgPath) {
   if (path.parse(imgPath).ext != '.png') {
     throw new Error('Invalid image type. Expected .png but got: ' + path.parse(imgPath).ext);
   }
 
-  let fields = path.parse(imgPath).name.split('-');
+  const fields = path.parse(imgPath).name.split('-');
   if (fields.length < 4 || fields.length > 5) {
     throw new Error('Invalid number of arguments. Expected 4/5 but got: ' + fields.length);
   }
@@ -25,7 +25,7 @@ function parseImgPath(imgPath) {
 }
 
 function hex2rgb(hexcode) {
-  let color = tinycolor('#' + hexcode);
+  const color = tinycolor('#' + hexcode);
 
   if (color.isValid()) {
     let rgb = color.toRgb();
@@ -40,17 +40,14 @@ function hex2rgb(hexcode) {
 const app = express();
 const port = 3000;
 
-let options = {
-  "radius": 25
-};
-let avatars = new Avatars.default(sprites.default, options);
+const options = { radius: 25 };
 
-app.get('/:path', async function (req, res) {
-  let { hashes, color } = parseImgPath(req.params.path);
+const avatars = new Avatars.default(sprites.default, options);
+
+app.get('/*', async function (req, res) {
+  const { hashes, color } = parseImgPath(req.url);
   
-  console.log(hashes, color);
-
-  let canvas = sharp({
+  const canvas = sharp({
     create: {
       width: 1000,
       height: 1000,
@@ -59,17 +56,12 @@ app.get('/:path', async function (req, res) {
     }
   });
 
-  let pngs = [];
-  for (let i = 0; i < hashes.length; i++) {
-    let svg = avatars.create(hashes[i]);
-    let png = await convert(svg, {
-      "width": 400,
-      "height": 400
-    });
-    pngs.push(png);
-  }
+  const pngs = await Promise.all(hashes.map((hash) => {
+    const svg = avatars.create(hash); 
+    return convert(svg, { width: 400, height: 400 });
+  }));
 
-  let grid = [
+  const grid = [
     // northwest
     {input: pngs[0], density: 300, top: 50, left: 100},
     // northeast
@@ -80,10 +72,10 @@ app.get('/:path', async function (req, res) {
     {input: pngs[3], density: 300, top: 500, left: 500}
   ];
 
-  let composite = await canvas
-  .composite(grid)
-  .png()
-  .toBuffer();
+  const composite = await canvas
+    .composite(grid)
+    .png()
+    .toBuffer();
   
   res.set('Content-Type', 'image/png');
   res.send(composite);
