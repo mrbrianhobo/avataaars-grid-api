@@ -24,10 +24,10 @@ function parseImgPath(imgPath) {
 }
 
 function hex2rgb(hexcode) {
-  const color = tinycolor('#' + hexcode);
+  const color = tinycolor(`#${hexcode}`);
 
   if (color.isValid()) {
-    let rgb = color.toRgb();
+    const rgb = color.toRgb();
     rgb.alpha = rgb.a;
     delete rgb.a;
     return rgb;
@@ -36,10 +36,19 @@ function hex2rgb(hexcode) {
   }
 }
 
-const options = { radius: 25 };
-const avatars = new Avatars.default(sprites.default, options);
+const avatarsOptions = { radius: 25 };
+const avatars = new Avatars.default(sprites.default, avatarsOptions);
 
-var converter = createConverter({ puppeteer: { args: ["--no-sandbox"] } });
+const converterOptions = { puppeteer: { args: ["--no-sandbox"] } };
+
+// Each converter launches a separate headless Chromium instance
+// using Puppeteer. We pre-create four converters here (one for each
+// avatar in the grid) in order to convert SVGs in parallel and also
+// re-use the same Chromium instances for each request.
+const converterA = createConverter(converterOptions);
+const converterB = createConverter(converterOptions);
+const converterC = createConverter(converterOptions);
+const converterD = createConverter(converterOptions);
 
 exports.avatars = async (req, res) => {
   let hashes;
@@ -50,7 +59,7 @@ exports.avatars = async (req, res) => {
     hashes = _hashes;
     color = _color;
   } catch(e) {
-
+    console.error(e);
     return;
   }
   
@@ -58,20 +67,25 @@ exports.avatars = async (req, res) => {
     create: {
       width: 1000,
       height: 1000,
-      channels: 4,
+      channels: 3,
       background: color
     }
   });
 
-  const pngs = [];
-  for (let i = 0; i < hashes.length; i++) {
-    let svg = avatars.create(hashes[i]);
-    let png = await converter.convert(svg, {
-      "width": 400,
-      "height": 400
+   function convert(converter, hash) {
+    const svg = avatars.create(hash);
+    return converter.convert(svg, {
+      width: 400,
+      height: 400
     });
-    pngs.push(png);
-  }
+  } 
+
+  const pngs = await Promise.all([
+    convert(converterA, hashes[0]),
+    convert(converterB, hashes[1]),
+    convert(converterC, hashes[2]),
+    convert(converterD, hashes[3]),
+  ]);
 
   const grid = [
     // northwest
