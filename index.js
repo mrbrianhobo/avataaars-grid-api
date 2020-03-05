@@ -1,6 +1,6 @@
 const path = require('path');
 const sharp = require('sharp');
-const tinycolor = require("tinycolor2");
+const tinycolor = require('tinycolor2');
 const Avatars = require('@dicebear/avatars');
 const sprites = require('@dicebear/avatars-avataaars-sprites');
 const { createConverter } = require('convert-svg-to-png');
@@ -39,7 +39,7 @@ function hex2rgb(hexcode) {
 const avatarsOptions = { radius: 25 };
 const avatars = new Avatars.default(sprites.default, avatarsOptions);
 
-const converterOptions = { puppeteer: { args: ["--no-sandbox"] } };
+const converterOptions = { puppeteer: { args: ['--no-sandbox'] } };
 
 // Each converter launches a separate headless Chromium instance
 // using Puppeteer. We pre-create four converters here (one for each
