@@ -49,8 +49,8 @@ app.get('/*', async function (req, res) {
   
   const canvas = sharp({
     create: {
-      width: 1000,
-      height: 1000,
+      width: 1200,
+      height: 630,
       channels: 4,
       background: color
     }
@@ -58,18 +58,18 @@ app.get('/*', async function (req, res) {
 
   const pngs = await Promise.all(hashes.map((hash) => {
     const svg = avatars.create(hash); 
-    return convert(svg, { width: 400, height: 400 });
+    return convert(svg, { width: 280, height: 280 });
   }));
 
   const grid = [
-    // northwest
-    {input: pngs[0], density: 300, top: 50, left: 100},
-    // northeast
-    {input: pngs[1], density: 300, top: 50, left: 500},
-    // southwest
-    {input: pngs[2], density: 300, top: 500, left: 100}, 
-    // southeast
-    {input: pngs[3], density: 300, top: 500, left: 500}
+    // 1st
+    {input: pngs[0], density: 300, top: 175, left: 70},
+    // 2nd
+    {input: pngs[1], density: 300, top: 175, left: 330},
+    // 3rd
+    {input: pngs[2], density: 300, top: 175, left: 590}, 
+    // 4th
+    {input: pngs[3], density: 300, top: 175, left: 850}
   ];
 
   const composite = await canvas
